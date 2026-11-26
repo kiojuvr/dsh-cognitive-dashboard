@@ -1,256 +1,73 @@
-# Design note — cognitive memory
+# Cognitive dashboard design
 
-> デジタル庁「ダッシュボードデザインの実践ガイドブック」に基づく設計記録（2026-11-17）。
-> 対象は `conversation.view` の **認知** タブ。composer dock のカードは持たない（D91）。
->
-> **D94（2026-11-21）: 検査カードを削除した。** **D97 で目的ツリーは model のグラフから、
-> D98 で memory 台帳フォールバックを削除した。** 現在のビューは model のグラフ
-> （`cognitiveGraph`）と findings 台帳だけを読む。検査はリレーの `check-drift` の
-> 監査として残るが、このプラグインは読まない。以下の §1〜§8 の検査・KPI・判定の記述は
-> D94 以前の設計として読む（履歴は §8 に残す）。
-> **D108（2026-11-25）: 「記録された構造」カードを想起ブロックの原文表示に置き換えた。**
-> ビューは model の `recall(root)` を読み、セッションに渡るテキストをそのまま出す。
+The **Cognition** tab appears in the conversation view of the DSH Web GUI.
+The layout and information order draw on the *Practical Guide to Dashboard
+Design* from Japan's Digital Agency. For usage and limitations, see
+[Behavior and limitations](DETAIL.md).
 
-## 1. 要件（5W1H）
+## Purpose
 
-| 問い | 内容 |
-|---|---|
-| **Why** | 長期タスクの drift（目的が局所へ転じる）に、開いた数秒で気づき、次の一手（継続・変更・保留）を決められること。目的・現在のタスク・他の未達部分を同じ画面に置く。状態の提示であり、ゲートではない |
-| **What, so What** | ①未対応 findings はどれか ②目的と現在のタスクは何か。①で「今なにかする必要があるか」を決め、②で文脈を確かめる |
-| **Who** | ワークスペース所有者（日本語・開発者・DSH 常用者）。読み取り専用で、操作の学習を要求しない |
-| **When** | セッションを開いたとき、作業の区切り。日次〜随時 |
-| **Where** | DSH Web GUI の Conversation view（デスクトップ、幅 ~1000px、ライト/ダーク）。composer が下部を覆う |
-| **How** | session projection `dashboard` を読むだけ。フィルター・ドリルダウンは持たない。データはワークスペースの台帳だけ |
+When users open a session or reach a stopping point, they can see the overall
+objective, the current task, and other unfinished work in one place. That
+helps them decide whether to continue, change course, or pause. The dashboard
+is read-only: it does not judge the work or block progress.
 
-### 制約
+## Information order
 
-- 情報の種類が多い（目的ツリー・現在地・他の未達部分・findings）→ 目的と現在地を先頭に置く（D79）。
-- composer が下部 ~150px を覆う → 重要情報を上に置き、末尾に composer ぶんの余白を確保する。
-- 色はホストの `--dsw-alias-*` のみ（ライト/ダーク両対応）。色だけで状態を伝えない。
-
-## 2. 載せる情報（情報一覧）
-
-| 指標の分類 | 情報の詳細 | 補足情報 | グラフ候補 |
-|---|---|---|---|
-| 未対応 findings | 件数、優先度、種別、経過日数 | 優先度順。滞留は強調 | 表（優先度チップ） |
-| 目的 | root + サブゴール + 手段（深さ・確度・投資・受入） | 全体→部分。先頭に置く | ツリー（円形。大きさ = 投資、輪 = 受入） |
-| 現在地 | current task（3 行クランプ） | 更新からの経過 | テキスト |
-| 他の未達部分 | `remaining`（他の未完了タスク） | 現在のタスクの下。3 行クランプ、全文は tooltip。未記録なら「未記録」 | テキスト（現在地カード内） |
-| 想起ブロック | model がセッションに渡す原文（D108） | 末尾。定義 1 行 + 原文。BIRDSEYE は含まないと明記 | テキスト（折り返す `<pre>`） |
-
-## 3. レイアウト
-
-```
-┌ 目的（全幅） ─────────────────────────────────────────────┐
-│ 目的ツリー（root + サブゴール）                            │
-├ 現在のタスク ─────────────────────────────────────────────┤
-│ 現在のタスク + 他の未達部分（3 行クランプ）                 │
-├ 未対応 findings ──────────────────────────────────────────┤
-│ 優先度順（4 行）                                           │
-└───────────────────────────────────────────────────────────┘
-```
-
-- 視線: 上 → 下。先頭に目的と現在地（文脈のアンカー）、次に findings。
-- 現在地カードは**現在のタスクと他の未達部分**を縦に持つ（D79）。人間も LLM の想起ブロックと
-  同じ三つ組（目的・現在地・他の未達部分）を見て、継続・変更・保留を判断できる。
-- ページの h1 は visually-hidden（視覚的なタイトルはタブ名「認知」が担う）。
-- ヘッダ（タイトル・判定・メタ行）は持たない（D64）。
-- 末尾に `calc(var(--dsh-composer-height, 152px) + 24px)` の余白。composer の下に隠れない。
-
-## 4. グラフ選定
-
-| 伝えたいこと | 選択 | 理由 |
+| Order | Section | Purpose |
 |---|---|---|
-| 未対応 findings | 表 + 件数チップ | 件数が少なく、タイトルを読むことが目的 |
-| 優先度の構成 | チップ（P2 2 / P3 2） | 4 件では円/棒は過剰。数値で十分 |
-| 他の未達部分 | テキスト（現在地カード内のラベル + 3 行クランプ） | 件数ではなく、残っている作業の列挙。次の一手を判断する材料 |
-| 投資と受入 | ノードの大きさ（相対平方根）+ 受入の輪 | 大きさは投じた量、輪は受入の完了。判定語・スコア・しきい値は持たない（D89） |
+| 1 | Objective tree | Shows how components support objectives and which branch contains the current work. |
+| 2 | Current task and other open work | Shows the tasks relevant to the next decision. If text is truncated, the tooltip provides the full text. |
+| 3 | Open findings | Lists findings by priority and shows their kind, age, and staleness. |
+| 4 | Recall block | Shows the text the model plugin supplies to the session, preserving indentation and line breaks. |
 
-## 5. カラー
+The tab label is the visible title. A visually hidden `h1` preserves the
+heading for screen readers without repeating it on the page. The detail panel
+sits beside the tree and wraps below it when space is limited. Bottom padding
+keeps content clear of the floating composer.
 
-- 意味色のみ: 正常 = success、警告 = warn、失敗 = error、操作・リンク = business。系列色は使わない。
-- 面は `color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent)` でテーマに追従。
-- ステータスは **アイコン + 語 + 色** の 3 チャネル。色覚多様性でも識別できる。
-- コントラスト: 色面の近くに必ず数値を置く（3:1 を満たせない場合の代替）。文字は label-primary/secondary を使い、色付き文字を状態の唯一の手がかりにしない。
+## Reading the objective tree
 
-## 6. アクセシビリティ
+- **Position.** The root is at the centre, with nodes arranged in concentric
+  rings by depth. Solid lines represent `serves` and dashed lines represent
+  `requires`. The current path is marked by fill, outlines, thicker edges, and
+  a breadcrumb, so it does not rely on colour alone.
+- **Node size (investment).** Size reflects the combined count of linked tasks,
+  findings, and commits touching implementation paths for the node and its
+  descendants, relative to the largest branch. Documentation links appear in
+  the details but do not contribute to the commit count.
+- **Ring (acceptance).** The ring shows the share of recorded milestones that
+  are complete. If no milestones are recorded, there is no ring. Neither node
+  size nor the ring represents a score or a pass/fail threshold.
+- **Navigation.** Users can search, zoom, pan, and collapse branches. The tree
+  exposes `tree` and `treeitem` roles to assistive technology. Arrow keys move
+  between nodes, Enter or Space opens node details, and Escape closes them.
 
-- ページの h1 は visually-hidden。findings は `<ul>`、見出しは `<h2>`。
-- 状態は記号（✓ / ! / × / –）と語を併記。不明は `?`、中立は `–` に分ける。
-- 確度チップは `title` に加えて visually-hidden の説明を持つ。
-- 画面全体の要約を visually-hidden の段落で提供（目的ノード数と未対応 findings 数）。
-- ライト/ダーク両方で確認する。
+## Data sources and missing information
 
-## 7. 実装チェック（skill の checklist より）
+The host reads the tree and recall block from `dsh-cognitive-model` through
+its `cognitiveGraph` service and reads the workspace findings ledger directly.
+The web client renders the host's `dashboard` projection. The model plugin
+owns event-log projection and recall assembly.
 
-- [x] 目的・現在地・他の未達部分が先頭にあり、次の一手（継続・変更・保留）を判断できる（D79）
-- [x] 操作を要求しない（読み取り専用、スクロールとツリーの開閉のみ）
-- [x] グラフの色数は 1〜5（success / warn / error / business / neutral）
-- [x] 装飾（3D・影・不要なグリッド）を使わない
-- [x] 色だけで識別しない（記号 + 語）
-- [x] 観察カード・composer カード・検査カードを持たない（D91 / D94）
-- [x] composer に隠れない余白
-- [x] ライト/ダークで表示確認
-- [ ] 複数利用者からのフィードバック（次回以降。今回は UI/UX レビュー 1 件）
+The view distinguishes unrecorded data, unreadable data, and an unavailable
+model plugin. An unrecorded task list does not imply that no work remains.
+If some Git history cannot be read, the dashboard reports the available count
+as a lower bound and identifies the affected implementation paths.
 
-## 8. 検証
+The recall block wraps long lines without changing the text. It does not
+include the bird's-eye check (`BIRDSEYE`) that can be added to a session's prompt
+once per error. Viewing the block does not mark that check as seen.
 
-- **現在のレイアウト（D94 後）**: `docs/assets/objective-tree-investment-2026-11-20-light.png`
-  （目的ツリーと詳細。検査カードは写っていない）。`npm test` 38/38。
-- 2026-11-17 のスクリーンショットは **D94 以前の履歴**（検査カードあり）。
-- 旧レイアウト（**D61 時点**。KPI タイルとフッターあり）:
-  ライト `docs/assets/dashboard-2026-11-17-light.png`（上部）、
-  `docs/assets/dashboard-2026-11-17-light-bottom.png`（目的・台帳メタ）、
-  ダーク `docs/assets/dashboard-2026-11-17-dark.png`（上部）、
-  `docs/assets/dashboard-2026-11-17-dark-bottom.png`（目的・台帳メタ）
-- 画面は 1282×821 の DSH ウィンドウ（conversation pane 約 960px）。
-  スクリーンショット中央の ToDo バーは host のオーバーレイで、ダッシュボードの要素ではない。
-- 実データ（当時）: 未対応 findings 4（P2 1 / P3 3）。検査結果は 2026-11-18 に再実行。
-  （検査カードは D94 で削除。以下は D94 以前の履歴。）
-- D84（2026-11-19、実画面受入）: 目的ツリー（indented tree）と現在のタスク
-  `docs/assets/objective-tree-2026-11-19.png`（8 ノード、dashboard 3 タスク · 1 finding、
-  他に残っていること 4 件、未対応 findings 3 件）。認知レジャーの無いワークスペースでの
-  「未記録」表示（F4 の受入）`docs/assets/objective-tree-empty-workspace-2026-11-19.png`
-  （目的・現在のタスク・findings は「未記録」。✓ も「正常」も出ない。検査カードは D94 で削除）
-- D94（2026-11-21）: 検査カードを削除。ビューは台帳（目的ツリー・現在地・remaining・findings）
-  だけを読み、`docs/reports/checks.json` と `check-drift` への依存をなくした。`npm test` 38/38。
-- D98（2026-11-23）: memory 台帳フォールバックを削除。ツリーは model のグラフだけから描き、
-  model 不在なら描かない。`readState` は `{ findings, graph, tree }`（`tree` は `graph` / `none`）
-  になり、`readState.memory` と `facts` を廃止した。Host テストは「台帳だけでは描かない」
-  「グラフ欠落」「読み取りエラー」を固定し、`npm test` 55 項目。パッケージを 0.7.0 に。
-- D63（2026-11-17）: KPI タイルとフッターを削除し、目的と現在のタスクを先頭へ移動。
-- D64（2026-11-17）: ヘッダ（タイトル・判定・メタ行）を削除し、総合判定を「ドリフト検査」の
-  見出し横の KPI チップへ移動。タブ・カード名を cognitive memory（認知記憶）に、
-  「チェック」を「検査」に変更。カードは 1 行（認知記憶 警告 1 通過 9 · 未対応 4）。
-  描画テスト（10 バリアント × 2 コンポーネント）で「header のメタなし」「KPI あり」
-  「カードが 1 コンテナ」を確認。ライトの実画面スクリーンショットは
-  `docs/assets/cognitive-memory-2026-11-17-light.png`（ダークは未撮影）。
-- D72（2026-11-18）: 検査の下に**観察**を追加。判定ではないので
-  状態色・記号・スコアを付けず、`<dl>` で4項目を出す。検査見出しに検査結果の経過を出し、
-  24 時間を超えたら再実行コマンドを表の下に出す。古い検査結果（`signals` なし）では
-  カードを出さない。描画テスト（11 バリアント × 2 コンポーネント）で「観察が検査の後」
-  「古い検査結果では非表示」「検査結果の経過」を確認。locale は 87 キー × 3。
-  観察の実画面スクリーンショットは未取得（描画テストのみ）。
-  カードからタブを開く公開 API は composer dock に無いため、タブ導線のまま（DETAIL の制約）。
-- D73（2026-11-18）: ユーザーの指摘（findings は下に伸びる／観察は検査と同じ幅）を受け、
-  観察を**左カラムで検査の直下**に移し、検査と同じ幅にした。findings は右カラムで
-  独立して伸びる。「観察であり判定ではない」という但し書きは UI から削除した。描画テストで
-  「checks → observations → findings の順」「観察が左カラム内」を確認。locale は 87 キー × 3。
-- D74（2026-11-18）: 「スコア」の定義文としきい値を UI と検査結果から削除。
-  KPI の理由は「失敗 X/Y」だけにした。`check-drift` の `--threshold` と JSON の
-  `threshold`/`score`/`total` を廃止し、`failing`/`judged` にした。描画テスト
-  11 バリアント、locale 87 キー × 3。
-- D75（2026-11-18）: UI の見出しを「ドリフト検査」→「検査」、「メーターの観察」→「観察」に。
-  検査なしの行を「正常」に、通過の折りたたみを「正常（通過 N）」に、カードは非通過が無いとき
-  「正常」を出す（非通過があるときは状態別件数）。描画テスト 11 バリアント、
-  locale 87 キー × 3。
-- D76（2026-11-18）: 「メーター」を廃止し、検査結果（`docs/reports/checks.json`）に一本化。
-  ファイル名・プロジェクション（`report`）・UI の語（未実行時・古さ・読み上げ）から meter を
-  削除。コマンドは `node tools/check-drift.mjs --out docs/reports/checks.json`。
-  描画テスト 11 バリアント、locale 86 キー × 3。
-- D77（2026-11-18）: 検査結果の未実行時・古いときに UI がコマンドを出さない。
-  空状態は見出し「検査」＋本文「このワークスペースには検査結果がありません」、古さは
-  見出しの経過と KPI の理由だけで示す。理由: ①ダッシュボードは読み取り専用で、
-  コマンドを実行するのはエージェント。人間に CLI 実行を求めるのは担当違い。
-  ②新規ワークスペースには `tools/check-drift.mjs` が無く、その指示は実行できない
-  誤案内になる。③D73 と同じく、読者が行動できない情報は UI に置かない。
-  `RERUN_COMMAND` と `dash.runHint` を削除し、空状態の見出しをセクション名に戻した。
-  locale は 86 キー × 3（runHint を消し noResultsBody を足す）。
-- D79（2026-11-18）: 現在地カードに「他に残っていること」（`remaining`）を追加。目的・現在地・
-  他の未達部分を同じ画面で見て、次の一手（継続・変更・保留）を判断できるようにした。
-  未記録なら「未記録」と出し、欠落を「他に残りは無い」と読ませない。描画テスト
-  （`remaining` あり / なし / 現在のタスクなし / locale キー一致）、`node --check`。
-  **実画面は未確認**（ホスト再起動後に確認）。
-- D80（2026-11-18）: 検査カードの末尾に「外部レビューの手順」リンクを追加したが、
-  **D81 で廃止**（外部レビューの機構そのものを廃止したため。レビュー鮮度の表示も削除）。
-- D81（2026-11-18）: 外部レビューの機構を廃止。ダッシュボードから「レビュー鮮度」と
-  「外部レビューの手順」リンクを削除し、KPI の理由からレビューの鮮度を外した。
-  読み取り専用・コマンドを出さない方針は変わらない。
-- D83（2026-11-19）: projection に `readState`（missing / ready / error）を追加。未存在・
-  権限エラー・JSON 破損を同じ空値に潰さない。findings の空状態は「未記録 / 記録0件 /
-  未対応0件」を区別し、緑の ✓ は「ready かつ未対応0件」だけに出す。ページ判定と dock は
-  目的・現在地・`remaining`・必要な台帳が ready でない限り success を出さない。
-  `remaining` の欠落は、現在タスクが無い場合も隠さず「未記録」と出す。選択規則は
-  `dsh-cognitive-core` の `ledger.ts` を memory / check-drift と共有する。**実画面は未確認**。
-- 1000×800 でも 2 カラム（目的・現在地 / 検査表・findings）が 1 カラムに落ちて破綻しない
-  （`flex-wrap`。表は横スクロール可能）。
-- D85 Stage 2（2026-11-20）: 目的ツリーを indented tree から**円形の radial tree** に変えた。
-  - 目的カードを全幅の行にし、左に SVG のツリー、右に選択ノードの詳細。
-    `現在のタスク` はその下の行に分けた（ノードを選ばなくても常に見える）。
-  - root を中心に、深さでリング、ノード半径は **投資**（D89）を全体最大に対する相対の
-    平方根で 7〜22px。current path は塗り・輪郭・太い辺で描き、右の列に
-    `objective › dashboard` の breadcrumb でも出す。ノードのラベルは subject の末尾キー
-    （長いキーは 14 文字 + …。全文は詳細と読み上げ名）。
-  - クリックで詳細（value・confidence・subject・tasks・open findings・paths・docs）。
-    Tab で移動、Enter/Space で詳細、Escape で閉じる、↑↓←→ で親・子・兄弟。
-    `role="tree"` / `treeitem`、`aria-level` / `aria-expanded` / `aria-selected`。
-  - 検索（一致以外を淡く）、ズーム（0.6〜2.5 倍）、ドラッグでパン、ダブルクリックで折りたたみ。
-  - 色は current path にだけ使う。判定語・スコア・しきい値は出さない。
-  - 検証: `npm test`（`test/render.test.mjs`、jsdom + React）で 24 項目。ライト/ダークの
-    プレビューを確認。**実画面はホスト再起動後に確認**（クライアントのバンドルは再起動で更新）。
-    プレビュー（fixture の描画）: `docs/assets/objective-tree-radial-2026-11-20-light.png`、
-    `docs/assets/objective-tree-radial-2026-11-20-dark.png`。
-  - 直近コミットと stale paths は Stage 3（D86 / D87）→ **D89 で実装**（下記）。
-- D89（2026-11-20）: 目的ツリーの大きさを**投資**、輪を**受入**に変えた。drift はノードの
-  大きさではなく、投資が進捗・完成度に対して過大かどうか（ユーザー指摘）。
-  - projection: ノードごとに投資（全タスク + 全 finding + `paths` の commits。タスクは
-    同一 subject を1件）と受入（`milestones` の done/total）を、子孫の合計で渡す。
-    commits はリポジトリごとに `git log` を1回、HEAD でキャッシュ（D87 の懸念）。
-    `docs` は参照なので commits を数えず、詳細の内訳にだけ出す。stale は `paths` / `docs` の
-    存在チェック。
-  - client: 半径 = 全体最大に対する相対の平方根（7〜22px）。輪 = `stroke-dasharray` の弧
-    （中性色のみ。判定色は使わない）。凡例は「大きさ = 投資 · 輪 = 受入（n/m）」。
-    詳細に投資の内訳・受入の項目（done/未done・日付）・最終活動・stale（「見つかりません」）。
-    aria 名に受入件数を含める。
-  - 検証: `npm test` 35 項目（受入の輪、投資による大きさ、aria、詳細の受入/投資/stale/
-    最終活動、受入なしのノードに輪がないこと）。**実画面はホスト再起動後に確認**。
-  - プレビュー（実台帳の投影を jsdom で描画、2026-11-20）:
-    `docs/assets/objective-tree-investment-2026-11-20-light.png`。
-- D88（2026-11-20）: 目的（objective/）と手段（component/）を分け、ノード間に `serves` / `requires` / `verifies` のエッジを持たせた。ツリーは root → 中間目的 → 手段の3段。`serves` は実線、`requires` は破線の弧。ノード詳細に「仕える目的」「必要とする」「これを消すと壊れる」「これを確かめる」を出す。判定語・スコアは出さない。
-  - 修正（2026-11-20、実画面で発見）: マウント時の `scrollIntoView({block:'start'})` が
-    会話ビューのリング（タブバーを含む祖先）までスクロールし、タブが画面外に出て他の
-    ビューを選べなくなった。**ビュー自身の `scrollTop` を戻すだけ**にした。祖先は触らない。
-- UI/UX レビュー（サブエージェント、独立コンテキスト）の主な指摘と対応:
-  - P1: 0 失敗のブルレットが空で、しきい値ティックが値に見える
-    → 通過色で満杯になる構成バー + 可視のしきい値ラベルに変更
-  - P2: ページ全体の判定がなく、緑の「正常」と amber の「要確認」が競合
-    → ヘッダに集約判定（要確認: レビューが古い）を追加し、タイルの語を「失敗なし」に限定
-  - P2: カードの「ドリフト 0/8」が進捗記法 → 「失敗 0/8」に変更
-  - P2: 空状態が drift meter の実行を誤案内 → 目的・現在タスク・判定対象の専用文言に分離
-  - P2: ダークのスクリーンショットが修正前 → 同一ビルドで再撮影
-  - P2: 狭幅の表 → `min-width` + 横スクロール
-  - P3: 行ヘッダ、確度の読み上げ、中立/不明の記号、コントラスト、通過行の折りたたみ、
-    現在タスクのクランプ、フッターの簡素化、depth のインデント、カードのメーター鮮度
-- D91（2026-11-20）: 観察カードと composer dock のカードを削除し、タブ名を「認知記憶」から
-  「認知」に変えた。観察は人間の判断材料にならず、LLM へ渡る導線も無いため、D79 の
-  「判断に使えない情報は置かない」に従って削除した（ユーザー指摘）。カードはタブが導線で、
-  重複していた。描画テスト 39 項目（signals を持っていても観察カードが描画されない、
-  composer カードが登録されない、タブ名が認知、locale 3 辞書のキー一致）。**実画面はホスト再起動後に確認**。
-- D106（2026-11-25）: model の graph が読めないとき、`graphSnapshot` の `message`（理由）を
-  グラフ節に出す。**コマンドは出さない**（D77 を維持）。理由に移行コマンドを含めないのは
-  model 側の責任にし、`graph_query` / `graph_write` はエージェント向けにコマンドを案内する。
-  `message` が無い・空のときは従来の「読み取れません」にフォールバックする。描画テスト
-  2 件（理由あり / 理由なし）。**実画面は未確認**（未移行 graph を持つワークスペースが必要）。
-- D108（2026-11-25）: 「記録された構造」カードを**想起ブロックの原文表示**に置き換えた。
-  - model は `cognitiveGraph` サービスに `recall(root)` を足し、設定済みの予算
-    （`contextLimit` / `recallLimit`）で組み立てたブロックを返す。ダッシュボードの Host は
-    それを `dashboard` プロジェクションに載せ、クライアントは `dashboard` だけを読む
-    （2 つ目のプロジェクションを読まない）。ブロックを再組み立てしないので、カードと入力が
-    食い違わない。
-  - 表示は原文のまま（`white-space: pre-wrap` の `<pre>`）。インデントと改行がツリーの深さと
-    節を運ぶので、チップやツリーに描き直さない。高さの上限は置かない（読みに来た材料を
-    切らない。ビュー全体がスクロールする）。
-  - 定義 1 行を添える: 「セッションに渡す原文。セッションごとに一度だけ添える俯瞰の促し
-    （BIRDSEYE）は含まない」。読み取りは BIRDSEYE の受領を消費しない（読み取り専用）。
-  - 空・読めない・プラグイン不在を区別する（F4）。`dash.graph.*` と `graph.type.*` の
-    locale キー、`graphCounts` / `graphChips` / `graphBlock` 系のスタイル、`worldRows` など
-    グラフ描画の補助は削除した。
-  - 検証: model 90/90（`recallSnapshot` の 7 件を含む）、dashboard host 7/7・render 54/54。
-    実データ（このワークスペース）の `recallSnapshot` が、セッションのシステムプロンプトに
-    入っているブロックと一致することを確認。プレビュー（実台帳の投影を jsdom で描画、
-    2026-11-25）のスクリーンショットはローカルパスを含んでいたため削除した。**実画面は未確認**
-    （クライアントのバンドルは DSH 再起動で更新される）。
-  - D109（2026-11-26）でブロックの文面は変わった（`Map:`、Facts は `node` 辺、
-    予測誤差は件数1行）。上のプレビューは D108 時点の文面で、現在の入力ではない。
-    カードの定義（原文をそのまま出す）は変わらない。
+## Colour and accessibility
 
+The dashboard uses the host's light and dark themes. Symbols and text convey
+status alongside colour. Tooltips and screen-reader text explain confidence
+labels. There is no overall verdict or colour-coded score.
+
+## Design history
+
+The objective tree moved from a list to a radial layout so users could see the
+hierarchy, current path, investment, and acceptance together. For recall, the
+design favours showing the text supplied to the session rather than drawing a
+separate view of the underlying data.

@@ -2,19 +2,19 @@
 
 A user-facing **cognitive memory** view for the cognitive layer: the objective tree, the current task and other open work, findings, and the recall block a session starts from, shown in the DSH Web GUI.
 
-The Host half publishes one session projection (`dashboard`). The objective tree is drawn from the model graph: the dashboard reads the graph service `dsh-cognitive-model` publishes (`cognitiveGraph`) instead of re-projecting the event log, so supersession and conflict detection keep one implementation. The graph is the only tree source (D98): a profile without the model plugin draws no tree and says so. The findings ledger (`.dsh/cognitive-findings/findings.json`) is read directly. The Web client adds a **Cognition** tab next to Chat and Trajectory. The view is read-only.
+The Web client adds a read-only **Cognition** tab next to Chat and Trajectory. The dashboard draws the objective tree from the `cognitiveGraph` service provided by `dsh-cognitive-model`. If the model plugin is not installed in the profile, the dashboard says so and does not draw a tree. It reads findings directly from the workspace ledger (`.dsh/cognitive-findings/findings.json`).
 
-The checks card was removed in D94. It displayed a report written outside this repository (`docs/reports/checks.json`, produced by the cognitive-memory relay's check script), so the dashboard was self-diagnosis and a relay dependency on a tool outside this repository. The view now reads only the model's service and the findings ledger.
-
-The last card is the **recall block** (D108): the text `dsh-cognitive-model` hands a session, shown verbatim. It replaced the recorded-structure card, which redrew the graph and could disagree with the input. The Host reads the block from the same service (`recall(root)`) in the same pass as the tree, and the client shows it as a wrapping `<pre>` so the indentation and line breaks survive. The per-session bird's-eye check (`BIRDSEYE`) is not in the text — the prompt spends it once per reader — and the card says so.
+The last card shows the **recall block** verbatim, preserving its indentation and line breaks. It uses the text provided by `dsh-cognitive-model` and does not include the per-session bird's-eye check (`BIRDSEYE`).
 
 ## Design
 
 The view follows the Digital Agency dashboard design guide: the objective tree is the whole picture and comes first, then the current task and the other open work as context, then the open findings, then the recall block as the material behind them. There is no page verdict, no score and no threshold. Absence is shown as `not recorded` or `could not read`, never as success. Status is carried by a glyph and a word as well as a color.
 
-The objective tree is a radial drawing: the root at the centre, each objective on a ring by depth, and the node radius set by **investment** (all tasks and findings ever linked, plus the commits touching the node's paths), relative to the largest branch (D89). A repository git cannot read makes its commit count a lower bound rather than a zero, and the detail says which link failed (D105). A ring around the node is **acceptance**: the share of the recorded milestones that are met. The current path is drawn (fill, outline, thicker edges) and repeated as a breadcrumb; selecting a node opens its tasks, open findings, implementation paths, docs, investment breakdown, acceptance items and last activity. Nodes are keyboard-reachable and announced as a tree; the view also offers search, zoom/pan and collapse. Size and ring are readings, not scores: no threshold and no verdict word (D85 / D89).
+The objective tree places the root at the centre and arranges the other nodes in rings by depth. Node size shows **investment** relative to the largest branch: linked tasks and findings, plus commits touching the node's paths. If Git cannot read the history for a path, the dashboard marks the commit count as a lower bound and identifies the affected path. A ring around each node shows **acceptance**: the share of recorded milestones that are met.
 
-The 5W1H, the information inventory, the layout and graph choices, the color/accessibility decisions, and the checklist are in [`docs/DESIGN.md`](docs/DESIGN.md). Screenshots of the light and dark themes are in `docs/assets/`; the 2026-11-17 screenshots predate D94 and may show the removed checks card. The tree drawn from the model graph is `docs/assets/tree-from-graph-2026-11-22.png`. The recall block card is described in [`docs/DESIGN.md`](docs/DESIGN.md).
+The current path is highlighted in the tree and repeated as a breadcrumb. Select a node to see its tasks, open findings, implementation paths, docs, investment breakdown, milestones and last activity. The tree supports keyboard navigation, search, zoom, pan and collapse.
+
+See [`docs/DESIGN.md`](docs/DESIGN.md) for layout and accessibility choices and design history.
 
 ## Install
 
