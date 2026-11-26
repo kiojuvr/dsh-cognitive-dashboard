@@ -1,6 +1,6 @@
 {
   "name": "@kioju/dsh-cognitive-dashboard",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "A user-facing dashboard for the cognitive layer: the objective tree, the current task, findings, and the recall block a session starts from.",
   "type": "module",
   "main": "index.js",

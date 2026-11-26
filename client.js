@@ -23,7 +23,7 @@
  * table. All copy goes through the Client locale service.
  */
 window.__ModuleLoader__.load({
-  id: 'dsh-cognitive-dashboard',
+  id: '@kioju/dsh-cognitive-dashboard',
   factory(require) {
     const React = require('react')
     const h = React.createElement

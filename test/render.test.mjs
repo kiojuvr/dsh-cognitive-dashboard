@@ -41,14 +41,19 @@ dom.window.HTMLElement.prototype.scrollIntoView = function scrollIntoView() {
   scrollIntoViewCalls += 1
 }
 
-const captured = { factory: null, slots: {}, slotMeta: null, dictionaries: null }
+const captured = { id: null, factory: null, slots: {}, slotMeta: null, dictionaries: null }
 dom.window.__ModuleLoader__ = {
   load(definition) {
+    captured.id = definition.id
     captured.factory = definition.factory
   },
 }
 require(CLIENT_FILE)
 if (captured.factory === null) throw new Error('client.js did not register a module')
+// The client module graph keys each row by the package name; a stale id leaves
+// the row without a factory and the view never appears.
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+if (captured.id !== pkg.name) throw new Error(`client.js registers ${String(captured.id)}, not the package name ${pkg.name}`)
 
 const plugin = captured.factory((name) => {
   if (name === 'react') return React
