@@ -162,11 +162,11 @@ const nodes = [
     kind: 'component',
     parent: 'objective/awareness',
     serves: 'objective/awareness',
-    paths: ['dsh-cognitive-memory/**'],
+    paths: ['example-workspace/src/**'],
     commits: 40,
     // D105: git could not read this repository, so 40 is a lower bound.
     commitState: 'unavailable',
-    commitErrors: ['dsh-cognitive-memory/**'],
+    commitErrors: ['example-workspace/src/**'],
     milestones: [
       { text: '6種の Fact を保存する', done: true },
       { text: '想起ブロックで渡す', done: true },
@@ -369,7 +369,7 @@ check(
 )
 check(
   'detail marks the link git could not read',
-  text().includes('dsh-cognitive-memory/**') && text().includes('commits を読み取れません'),
+  text().includes('example-workspace/src/**') && text().includes('commits を読み取れません'),
 )
 await fire(container.querySelector('[aria-label="閉じる"]'), new dom.window.MouseEvent('click', { bubbles: true }))
 

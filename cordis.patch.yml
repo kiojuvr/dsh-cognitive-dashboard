@@ -9,5 +9,5 @@
 
 - insert:
     - id: cognitive-dashboard
-      name: 'dsh-cognitive-dashboard'
+      name: '@kioju/dsh-cognitive-dashboard'
       config: {}

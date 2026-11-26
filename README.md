@@ -2,9 +2,9 @@
 
 A user-facing **cognitive memory** view for the cognitive layer: the objective tree, the current task and other open work, findings, and the recall block a session starts from, shown in the DSH Web GUI.
 
-The Web client adds a read-only **Cognition** tab next to Chat and Trajectory. The dashboard draws the objective tree from the `cognitiveGraph` service provided by `dsh-cognitive-model`. If the model plugin is not installed in the profile, the dashboard says so and does not draw a tree. It reads findings directly from the workspace ledger (`.dsh/cognitive-findings/findings.json`).
+The Web client adds a read-only **Cognition** tab next to Chat and Trajectory. The dashboard draws the objective tree from the `cognitiveGraph` service provided by `@kioju/dsh-cognitive-model`. If the model plugin is not installed in the profile, the dashboard says so and does not draw a tree. It reads findings directly from the workspace ledger (`.dsh/cognitive-findings/findings.json`).
 
-The last card shows the **recall block** verbatim, preserving its indentation and line breaks. It uses the text provided by `dsh-cognitive-model` and does not include the per-session bird's-eye check (`BIRDSEYE`).
+The last card shows the **recall block** verbatim, preserving its indentation and line breaks. It uses the text provided by `@kioju/dsh-cognitive-model` and does not include the per-session bird's-eye check (`BIRDSEYE`).
 
 ## Design
 
@@ -18,24 +18,19 @@ See [`docs/DESIGN.md`](docs/DESIGN.md) for layout and accessibility choices and 
 
 ## Install
 
-Every cognitive plugin installs with the same four steps.
+In DSH, open **Plugins**, choose **Add plugin**, and enter
+`@kioju/dsh-cognitive-dashboard`. From a shell the same install is
+`dsh plugin add @kioju/dsh-cognitive-dashboard`. The plugin is enabled when it is added;
+switch it on in **Plugins** if it is not.
 
-1. Put the shared library in a sibling checkout named `dsh-cognitive-core`. It
-   ships its built `lib/`, so it needs no build step of its own, and it is never
-   added to DSH directly.
-2. In this plugin's directory, run `npm install`, then `npm run build` when the
-   package declares a build script. `npm install` links `dsh-cognitive-core` into
-   the checkout, because a linked checkout keeps its own `node_modules`.
-3. Add this directory to DSH: **Plugins > Add plugin**, or
-   `dsh plugin --profile <profile> add <absolute path>` from a shell. The
-   installer writes the `link:` dependency and the bundle entry into the
-   profile's `package.json`; do not edit it by hand.
-4. The plugin is enabled when it is added. If it is not, enable it in
-   **Plugins**.
+The package is its own bundle (`dsh.bundle.patch`), and the shared library
+`@kioju/dsh-cognitive-core` arrives as an ordinary dependency — no checkout, no build
+step, nothing to place beside it. The browser half (`dsh.client`) ships with the
+package; reload the page after an update.
 
-The plugin is its own bundle (`dsh.bundle.patch`), so the profile needs no other
-entry. A browser half, when the package declares one (`dsh.client`), is served
-from the checkout; reload the page after changing it.
+The other two plugins install the same way: `@kioju/dsh-cognitive-model` (the graph and
+the recall block the last card shows) and `@kioju/dsh-cognitive-findings` (the findings
+ledger). The dashboard draws its tree from the model, so install that too.
 
 ## Test
 
@@ -43,7 +38,7 @@ from the checkout; reload the page after changing it.
 
 ## Related
 
-- `dsh-cognitive-model` — the graph the tree is drawn from and the recall block the last card shows: objectives, components, tasks, the epistemic record and the world model, projected from an event log. The dashboard reads its `cognitiveGraph` service.
-- `dsh-cognitive-findings` — writes the findings ledger.
+- `@kioju/dsh-cognitive-model` — the graph the tree is drawn from and the recall block the last card shows: objectives, components, tasks, the epistemic record and the world model, projected from an event log. The dashboard reads its `cognitiveGraph` service.
+- `@kioju/dsh-cognitive-findings` — writes the findings ledger.
 
 The full behavior and limitations are in [`docs/DETAIL.md`](docs/DETAIL.md).

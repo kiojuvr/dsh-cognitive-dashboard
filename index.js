@@ -20,7 +20,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { findProjectRoot } from 'dsh-cognitive-core'
+import { findProjectRoot } from '@kioju/dsh-cognitive-core'
 
 export const name = 'cognitive-dashboard'
 export const inject = ['sessionProjections']

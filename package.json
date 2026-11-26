@@ -1,15 +1,15 @@
 {
-  "name": "dsh-cognitive-dashboard",
+  "name": "@kioju/dsh-cognitive-dashboard",
   "version": "0.8.0",
   "description": "A user-facing dashboard for the cognitive layer: the objective tree, the current task, findings, and the recall block a session starts from.",
-  "private": true,
   "type": "module",
   "main": "index.js",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
     "./locale/*.json": "./locale/*.json",
-    "./icon": "./icon.svg"
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
   },
   "files": [
     "index.js",
@@ -46,7 +46,7 @@
     "react-dom": "^18.3.1"
   },
   "dependencies": {
-    "dsh-cognitive-core": "file:../dsh-cognitive-core"
+    "@kioju/dsh-cognitive-core": "^0.3.0"
   },
   "keywords": [
     "deepseek-harness",
@@ -56,5 +56,16 @@
     "drift"
   ],
   "author": "kiojuvr",
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiojuvr/dsh-cognitive-dashboard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kiojuvr/dsh-cognitive-dashboard/issues"
+  },
+  "homepage": "https://github.com/kiojuvr/dsh-cognitive-dashboard#readme"
 }

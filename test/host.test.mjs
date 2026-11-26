@@ -1,10 +1,8 @@
 /**
  * Host projection test (D97 / D98).
  *
- * The view's tree is drawn from the model graph only: the memory ledger is no
- * longer a second source (D98). This test drives the Host half the way the
- * projection registry does: register the definition with a fake registry, then
- * read `wire.view`.
+ * These tests drive the Host through a fake projection registry and read
+ * `wire.view`.
  */
 import assert from 'node:assert/strict'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
@@ -83,12 +81,6 @@ function findingsFile(cwd, findings) {
   const dir = path.join(cwd, '.dsh', 'cognitive-findings')
   mkdirSync(dir, { recursive: true })
   writeFileSync(path.join(dir, 'findings.json'), JSON.stringify({ findings, decisions: [] }))
-}
-
-function memoryFile(cwd, facts) {
-  const dir = path.join(cwd, '.dsh', 'cognitive-memory')
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(path.join(dir, 'memory.json'), JSON.stringify({ facts, stats: {} }))
 }
 
 async function viewOf(service, cwd) {
@@ -176,40 +168,8 @@ test('the tree is drawn from the graph when the model service is present', async
   assert.equal(view.unlinkedTasks, 0)
 })
 
-test('a memory ledger alone no longer draws a tree (D98)', async () => {
-  const cwd = workspace()
-  memoryFile(cwd, [
-    {
-      id: 'f1',
-      kind: 'decision',
-      subject: 'objective',
-      value: 'port the graph',
-      scope: 'repo',
-      status: 'active',
-      confidence: 'observed',
-      source: 'tool_output',
-      evidence: [{ kind: 'file', ref: 'x' }],
-      createdAt: AT,
-      updatedAt: AT,
-    },
-    {
-      id: 'f2',
-      kind: 'task_state',
-      subject: 'current task',
-      value: 'write the tree',
-      scope: 'repo',
-      status: 'active',
-      confidence: 'verified',
-      source: 'verified_command',
-      serves: 'objective',
-      evidence: [{ kind: 'command', ref: 'x' }],
-      createdAt: AT,
-      updatedAt: AT,
-    },
-  ])
-  const view = await viewOf(undefined, cwd)
-
-  // The ledger is written but ignored: the graph is the only tree source.
+test('an unavailable model service draws no tree and says so', async () => {
+  const view = await viewOf(undefined, workspace())
   assert.equal(view.readState.tree, 'none')
   assert.equal(view.readState.graph, 'unavailable')
   assert.equal(view.objective.root, null)
@@ -220,7 +180,6 @@ test('a memory ledger alone no longer draws a tree (D98)', async () => {
 
 test('a missing graph draws no tree and says so', async () => {
   const cwd = workspace()
-  memoryFile(cwd, [])
   const view = await viewOf({ snapshot: () => ({ state: 'missing', nodes: [], edges: [] }) }, cwd)
 
   assert.equal(view.readState.tree, 'none')

@@ -45,7 +45,7 @@ keeps content clear of the floating composer.
 
 ## Data sources and missing information
 
-The host reads the tree and recall block from `dsh-cognitive-model` through
+The host reads the tree and recall block from `@kioju/dsh-cognitive-model` through
 its `cognitiveGraph` service and reads the workspace findings ledger directly.
 The web client renders the host's `dashboard` projection. The model plugin
 owns event-log projection and recall assembly.
