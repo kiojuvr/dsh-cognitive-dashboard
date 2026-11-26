@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "dsh-cognitive-dashboard",
+    "description": "目的ツリー、現在のタスク、Findings を表示するダッシュボード。",
+    "detail": "docs/DETAIL.md"
+  }
+}

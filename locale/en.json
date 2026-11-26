@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "dsh-cognitive-dashboard",
+    "description": "A dashboard for the objective tree, the current task, and findings.",
+    "detail": "docs/DETAIL.md"
+  }
+}

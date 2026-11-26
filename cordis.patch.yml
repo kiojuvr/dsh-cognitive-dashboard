@@ -1,0 +1,13 @@
+# dsh-cognitive-dashboard — DSH bundle patch layer
+#
+# Registers the cognitive dashboard plugin. The Host half contributes one
+# session projection (key: dashboard) that reads the workspace ledgers; the Web
+# client contributes one conversation view tab (Cognition).
+#
+# Read-only: the dashboard never writes the ledgers. Data lives beside the
+# workspace, not in the DSH home.
+
+- insert:
+    - id: cognitive-dashboard
+      name: 'dsh-cognitive-dashboard'
+      config: {}

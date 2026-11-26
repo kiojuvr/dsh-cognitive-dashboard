@@ -1,0 +1,60 @@
+{
+  "name": "dsh-cognitive-dashboard",
+  "version": "0.8.0",
+  "description": "A user-facing dashboard for the cognitive layer: the objective tree, the current task, findings, and the recall block a session starts from.",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "docs",
+    "icon.svg",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.2-rc.3 <0.3.0"
+  },
+  "scripts": {
+    "test": "node test/host.test.mjs && node test/render.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^31.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "dependencies": {
+    "dsh-cognitive-core": "file:../dsh-cognitive-core"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "dashboard",
+    "drift"
+  ],
+  "author": "kiojuvr",
+  "license": "MIT"
+}
