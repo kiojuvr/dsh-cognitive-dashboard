@@ -57,9 +57,11 @@ dsh plugin add @kioju/dsh-cognitive-model
 
 A fresh workspace opens on **No objective is recorded yet** (Japanese: 目的がまだ記録されていません). This is the designed empty state, not a failure. The dashboard does not infer an objective from the conversation; it shows what the agent recorded in the graph. Until the first `graph_write`, there is nothing to draw.
 
-Record the objective once, in a normal session:
+Record the objective once, in a normal session. The objective is your intent, so state it yourself:
 
-> Read this repository's README and package.json, then record its purpose in the cognitive graph: the objective as `objective`, the current work as `task/current`, and the other open work as `task/<key>`. Use the files you read as evidence, and tell me in one line what you wrote.
+> The goal of this work is `<one sentence>`. Record it in the cognitive graph as `objective`, the current work as `task/current`, and the other open work as `task/<key>`. Use this message as the evidence for the objective, and read the repository only to fill in components and tasks. Tell me in one line what you wrote.
+
+The cognitive layer does not create or modify `package.json`: the model stores the graph in `.dsh/cognitive-model/graph.json`, and this tab only reads it. The agent can read files to fill in the structure, but the objective comes from you.
 
 The agent has the `graph_write` tool and a standing instruction for this. After it writes, the tab fills in — the projection refreshes on tool results, turn ends, user messages, and command completions; there is no refresh button.
 
