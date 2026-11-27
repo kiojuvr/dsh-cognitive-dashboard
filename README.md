@@ -1,5 +1,7 @@
 # dsh-cognitive-dashboard
 
+> 日本語: [README.ja.md](README.ja.md)
+
 A read-only **Cognition** tab for the DSH Web GUI: the objective, the current task, the other open work, the findings, and the recall block a session starts from — in one place, so you can decide whether to continue, change course, or stop.
 
 ## Why this exists
